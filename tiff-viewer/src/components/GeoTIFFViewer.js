@@ -16,7 +16,10 @@ const GeoTIFFViewer = () => {
       .then(async image => {
         const width = image.getWidth();
         const height = image.getHeight();
+        console.log('Width:', width);
+        console.log('Height:', height);
         const rasters = await image.readRasters();
+        console.log('rasters', rasters);
         let values = rasters[0]; // Assuming the first raster band contains the data
         values = rotate(values, width, height);
         const contours = generateContours(values, width, height);
@@ -67,14 +70,13 @@ const GeoTIFFViewer = () => {
     const color = d3.scaleSequential(d3.extent(values), d3.interpolateMagma);
 
     const plot = Plot.plot({
-      width: 500,
       projection: "equal-earth",
       color: { scheme: "Magma" },
       marks: [
         Plot.contour(values, {
           x: (_, i) => i % width,
-          y: (_, i) => Math.floor(i / width),
-          fill: d => color(d),
+          y: (_, i) => Math.floor(i / height),
+          fill: Plot.identity,
           thresholds: 30,
           stroke: "#000",
           strokeWidth: 0.25,
@@ -91,7 +93,7 @@ const GeoTIFFViewer = () => {
     <div>
       <h2>GeoTIFF Viewer</h2>
       <div ref={plotRef}></div>
-      <svg ref={svgRef} width="500" height="500"></svg>
+      <svg ref={svgRef} width="5000" height="5000"></svg>
     </div>
   );
 };
