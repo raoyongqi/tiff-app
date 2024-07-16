@@ -21,7 +21,7 @@ const GeoTIFFViewer = () => {
         const rasters = await image.readRasters();
         console.log('rasters', rasters);
         let values = rasters[0]; // Assuming the first raster band contains the data
-        values = rotate(values, width, height);
+        values = rotate(values);
         const contours = generateContours(values, width, height);
         setContours(contours);
         renderContours(contours, width, height, values);
@@ -74,8 +74,8 @@ const GeoTIFFViewer = () => {
       color: { scheme: "Magma" },
       marks: [
         Plot.contour(values, {
-          x: (_, i) => i % width,
-          y: (_, i) => Math.floor(i / height),
+          x: (_, i) => i % width/2-180,
+          y: (_, i) => 90 -Math.floor(i / width)/2,
           fill: Plot.identity,
           thresholds: 30,
           stroke: "#000",
