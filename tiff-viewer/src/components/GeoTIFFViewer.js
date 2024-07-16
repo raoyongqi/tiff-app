@@ -21,7 +21,6 @@ const GeoTIFFViewer = () => {
         const rasters = await image.readRasters();
         console.log('rasters', rasters);
         let values = rasters[0]; // Assuming the first raster band contains the data
-        values = rotate(values);
         const contours = generateContours(values, width, height);
         setContours(contours);
         renderContours(contours, width, height, values);
