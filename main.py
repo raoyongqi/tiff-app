@@ -16,9 +16,9 @@ app.add_middleware(
 
 @app.get("/tiff")
 def get_tiff():
-    tiff_path = "sfctmp.tiff"  # 替换为你的TIFF文件的具体路径
+    tiff_path = "tiff_folder/wc2.1_10m_bio_1.tif"  # 替换为你的TIFF文件的具体路径
     if os.path.exists(tiff_path):
-        return FileResponse(tiff_path, media_type='image/tiff', filename="sfctmp.tiff")
+        return FileResponse(tiff_path, media_type='image/tiff', filename="wc2.1_10m_bio_1.tif")
     else:
         raise HTTPException(status_code=404, detail="TIFF file not found")
 

@@ -18,12 +18,18 @@ const GeoTIFFViewer = () => {
         const height = image.getHeight();
         console.log('Width:', width);
         console.log('Height:', height);
+
         const rasters = await image.readRasters();
         console.log('rasters', rasters);
         let values = rasters[0]; // Assuming the first raster band contains the data
+
+        // values = rotate(values, width, height);
+
+        const { lons, lats } = extractGeoCoordinates(image, width, height);
+
         const contours = generateContours(values, width, height);
         setContours(contours);
-        renderContours(contours, width, height, values);
+        renderContours(contours, width, height, values, lons, lats);
       })
       .catch(error => console.error("Error loading TIFF:", error));
   }, []);
@@ -36,6 +42,22 @@ const GeoTIFFViewer = () => {
       values.subarray(k, k + width).reverse();
     }
     return values;
+  };
+
+  const extractGeoCoordinates = (image, width, height) => {
+    const [minLon, minLat, maxLon, maxLat] = image.getBoundingBox();
+
+    const lons = [];
+    const lats = [];
+    for (let i = 0; i < height; i++) {
+      for (let j = 0; j < width; j++) {
+        const lon = minLon + (maxLon - minLon) * (j / width);
+        const lat = maxLat - (maxLat - minLat) * (i / height); // 注意纬度方向与Y轴方向相反
+        lons.push(lon);
+        lats.push(lat);
+      }
+    }
+    return { lons, lats };
   };
 
   const generateContours = (data, width, height) => {
@@ -55,7 +77,7 @@ const GeoTIFFViewer = () => {
     return contours;
   };
 
-  const renderContours = (contours, width, height, values) => {
+  const renderContours = (contours, width, height, values, lons, lats) => {
     // Clear existing content
     d3.select(svgRef.current).selectAll("*").remove();
     d3.select(plotRef.current).selectAll("*").remove();
@@ -69,12 +91,12 @@ const GeoTIFFViewer = () => {
     const color = d3.scaleSequential(d3.extent(values), d3.interpolateMagma);
 
     const plot = Plot.plot({
-      projection: "equal-earth",
+      projection: "mercator",
       color: { scheme: "Magma" },
       marks: [
         Plot.contour(values, {
-          x: (_, i) => i % width/2-180,
-          y: (_, i) => 90 -Math.floor(i / width)/2,
+          x: (_, i) => lons[i],
+          y: (_, i) => lats[i],
           fill: Plot.identity,
           thresholds: 30,
           stroke: "#000",
