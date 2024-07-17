@@ -89,16 +89,38 @@ const GeoTIFFViewer = () => {
 
     // Plot rendering
     const color = d3.scaleSequential(d3.extent(values), d3.interpolateMagma);
+    const min = d3.min(values);
+    const max = d3.max(values);
+    
+    let thresholds = [];
+    // 第一档：最低值到 -25
+    thresholds.push(min, -100);
 
+    // 中间的均分段
+    const numIntervals = 8; // 中间的均分段数
+    const intervalSize = (max + 25) / numIntervals;
+    for (let i = 1; i <= numIntervals; i++) {
+      thresholds.push(-25 + i * intervalSize);
+    }
+
+    // 最后一档：20分以上
+    if (max > 20) {
+      thresholds.push(20, max);
+    } else {
+      thresholds.push(max);
+    }
+      
+    
     const plot = Plot.plot({
+      
       projection: "mercator",
-      color: { scheme: "Magma" },
+      color: { scheme: "Turbo" },
       marks: [
         Plot.contour(values, {
           x: (_, i) => lons[i],
           y: (_, i) => lats[i],
           fill: Plot.identity,
-          thresholds: 30,
+          thresholds: thresholds,
           stroke: "#000",
           strokeWidth: 0.25,
           clip: "sphere"

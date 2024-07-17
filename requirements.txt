@@ -2,3 +2,5 @@ fastapi
 uvicorn
 rasterio
 matplotlib
+gdal
+osgeo
