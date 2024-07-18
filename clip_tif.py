@@ -114,7 +114,7 @@ def clip_raster_with_geojson(raster_path, geojson_path, output_path):
 
 # 示例使用
 raster_file = 'tiff_folder/wc2.1_10m_bio_1.tif'
-geojson_file = 'path/to/your/geojson_file.geojson'
-output_file = 'path/to/your/output_clipped.tif'
+geojson_file = 'geojson/Pan-Tibetan Highlands (Liu et al._2022).geojson'
+output_file = 'cliped_folder/output_clipped.tif'
 
 clip_raster_with_geojson(raster_file, geojson_file, output_file)

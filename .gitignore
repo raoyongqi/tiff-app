@@ -1,3 +1,5 @@
 tiff-viewer/node_modules
 /venv
 /tiff_folder
+/cliped_folder
+/geojson

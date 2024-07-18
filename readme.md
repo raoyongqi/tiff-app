@@ -1,0 +1,1 @@
+python clip_tif.py
