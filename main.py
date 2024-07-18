@@ -16,7 +16,7 @@ app.add_middleware(
 
 @app.get("/tiff")
 def get_tiff():
-    tiff_path = "cliped_folder/output_clipped.tif"  # 替换为你的TIFF文件的具体路径
+    tiff_path = "cliped_folder/file_cropped.tif"  # 替换为你的TIFF文件的具体路径
     if os.path.exists(tiff_path):
         return FileResponse(tiff_path, media_type='image/tiff', filename="wc2.1_10m_bio_1.tif")
     else:

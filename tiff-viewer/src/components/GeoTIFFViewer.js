@@ -2,12 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { fromArrayBuffer } from 'geotiff';
 import axios from 'axios';
-import * as Plot from '@observablehq/plot';
 
 const GeoTIFFViewer = () => {
   const [contours, setContours] = useState(null);
   const svgRef = useRef(null);
-  const plotRef = useRef(null);
+  const scaleRef = useRef(null); // Ref for scale group
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,11 +31,12 @@ const GeoTIFFViewer = () => {
         console.log('rasters', rasters);
         let values = rasters[0]; // Assuming the first raster band contains the data
 
-        const { lons, lats } = extractGeoCoordinates(image, width, height);
-
+        // Filter out NaN or null values
+        console.log("orin:",values)
+        console.log(values)
         const contours = generateContours(values, width, height);
         setContours(contours);
-        renderContours(contours, width, height, values, lons, lats);
+        renderContours(contours, width, height);
       } catch (error) {
         console.error("Error loading TIFF:", error);
       }
@@ -44,32 +44,6 @@ const GeoTIFFViewer = () => {
 
     fetchData();
   }, []);
-
-  const rotate = (values, width, height) => {
-    const l = width >> 1;
-    for (let j = 0, k = 0; j < height; ++j, k += width) {
-      values.subarray(k, k + l).reverse();
-      values.subarray(k + l, k + width).reverse();
-      values.subarray(k, k + width).reverse();
-    }
-    return values;
-  };
-
-  const extractGeoCoordinates = (image, width, height) => {
-    const [minLon, minLat, maxLon, maxLat] = image.getBoundingBox();
-
-    const lons = [];
-    const lats = [];
-    for (let i = 0; i < height; i++) {
-      for (let j = 0; j < width; j++) {
-        const lon = minLon + (maxLon - minLon) * (j / width);
-        const lat = maxLat - (maxLat - minLat) * (i / height); // 注意纬度方向与Y轴方向相反
-        lons.push(lon);
-        lats.push(lat);
-      }
-    }
-    return { lons, lats };
-  };
 
   const generateContours = (data, width, height) => {
     const values = new Array(height);
@@ -80,74 +54,54 @@ const GeoTIFFViewer = () => {
       }
     }
 
+    const validValues = data.filter(d => d !== null);
     const contours = d3.contours()
       .size([width, height])
       .smooth(true)
-      .thresholds(d3.range(d3.min(data), d3.max(data), (d3.max(data) - d3.min(data)) / 10))(values.flat());
+      .thresholds(d3.range(d3.min(validValues), d3.max(validValues), (d3.max(validValues) - d3.min(validValues)) / 10))(validValues);
 
     return contours;
   };
 
-  const renderContours = (contours, width, height, values, lons, lats) => {
+  const renderContours = (contours, width, height) => {
     // Clear existing content
     d3.select(svgRef.current).selectAll("*").remove();
-    d3.select(plotRef.current).selectAll("*").remove();
 
-    if (contours.length === 0) {
-      console.error("No contours generated");
-      return;
-    }
-
-    // Plot rendering
-    const color = d3.scaleSequential(d3.extent(values), d3.interpolateMagma);
-    const min = d3.min(values);
-    const max = d3.max(values);
+    // Create color scale
+    const color = d3.scaleSequential()
+      .domain(d3.extent(contours.map(c => c.value)))
+      .interpolator(d3.interpolateMagma)
+      .unknown("#fff"); // Set unknown values (NaN or null) to white
     
-    let thresholds = [];
-    // 第一档：最低值到 -25
-    thresholds.push(min, -100);
+    // Add contours
+    d3.select(svgRef.current)
+      .selectAll("path")
+      .data(contours)
+      .enter().append("path")
+      .attr("d", d3.geoPath())
+      .attr("fill", d => color(d.value))
+      .attr("stroke", "#000")
+      .attr("stroke-width", 0.25);
 
-    // 中间的均分段
-    const numIntervals = 8; // 中间的均分段数
-    const intervalSize = (max + 25) / numIntervals;
-    for (let i = 1; i <= numIntervals; i++) {
-      thresholds.push(-25 + i * intervalSize);
-    }
+    // Add scale
+    const scale = d3.scaleLinear()
+      .domain(d3.extent(contours.map(c => c.value)))
+      .range([20, 300]); // Scale range from 20 to 300 pixels
 
-    // 最后一档：20分以上
-    if (max > 20) {
-      thresholds.push(20, max);
-    } else {
-      thresholds.push(max);
-    }
-      
-    
-    const plot = Plot.plot({
-      
-      projection: "mercator",
-      color: { scheme: "Turbo" },
-      marks: [
-        Plot.contour(values, {
-          x: (_, i) => lons[i],
-          y: (_, i) => lats[i],
-          fill: Plot.identity,
-          thresholds: thresholds,
-          stroke: "#000",
-          strokeWidth: 0.25,
-          clip: "sphere"
-        }),
-        Plot.sphere()
-      ]
-    });
+    const xAxis = d3.axisBottom(scale)
+      .ticks(5); // Adjust number of ticks as needed
 
-    plotRef.current.appendChild(plot);
+    d3.select(scaleRef.current)
+      .attr("transform", `translate(50, 10)`) // Adjust position as needed
+      .call(xAxis);
   };
 
   return (
     <div>
-      <h2>GeoTIFF Viewer</h2>
-      <div ref={plotRef}></div>
-      <svg ref={svgRef} width="5000" height="5000"></svg>
+      <h2>GeoTIFF Viewer with d3</h2>
+      <svg ref={svgRef} width="500" height="500">
+        <g ref={scaleRef}></g>
+      </svg>
     </div>
   );
 };

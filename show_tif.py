@@ -3,14 +3,18 @@ from rasterio.plot import show
 import matplotlib.pyplot as plt
 import numpy as np
 # 打开 TIFF 文件
-tif_file = "cliped_folder/output_clipped.tif"
+tif_file = "cliped_folder/file_cropped.tif"
+
 with rasterio.open(tif_file) as src:
     # 显示栅格数据
     show(src)
     crs = src.crs
     print(crs)
     plt.show()
-    data = src.read(1) 
+    data = src.read(1)
+    for i in range(1, src.count + 1):
+        print(f"Band {i} no-data value: {src.nodata}")
+ 
 # 将数据转换为一维数组，并移除无效值（如 NaN 或无效值）
 data = data.flatten()
 data = data[~np.isnan(data)]
