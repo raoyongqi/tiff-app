@@ -10,10 +10,19 @@ const GeoTIFFViewer = () => {
   const plotRef = useRef(null);
 
   useEffect(() => {
-    axios.get('http://localhost:8000/tiff', { responseType: 'arraybuffer' })
-      .then(response => fromArrayBuffer(response.data))
-      .then(tiff => tiff.getImage())
-      .then(async image => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/tiff', {
+          responseType: 'arraybuffer',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
+
+        const tiff = await fromArrayBuffer(response.data);
+        const image = await tiff.getImage();
         const width = image.getWidth();
         const height = image.getHeight();
         console.log('Width:', width);
@@ -23,15 +32,17 @@ const GeoTIFFViewer = () => {
         console.log('rasters', rasters);
         let values = rasters[0]; // Assuming the first raster band contains the data
 
-        // values = rotate(values, width, height);
-
         const { lons, lats } = extractGeoCoordinates(image, width, height);
 
         const contours = generateContours(values, width, height);
         setContours(contours);
         renderContours(contours, width, height, values, lons, lats);
-      })
-      .catch(error => console.error("Error loading TIFF:", error));
+      } catch (error) {
+        console.error("Error loading TIFF:", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const rotate = (values, width, height) => {
