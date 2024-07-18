@@ -24,16 +24,13 @@ const GeoTIFFViewer = () => {
         const image = await tiff.getImage();
         const width = image.getWidth();
         const height = image.getHeight();
-        console.log('Width:', width);
-        console.log('Height:', height);
 
         const rasters = await image.readRasters();
-        console.log('rasters', rasters);
         let values = rasters[0]; // Assuming the first raster band contains the data
 
         // Filter out NaN or null values
-        console.log("orin:",values)
-        console.log(values)
+        // values = values.map(value => isNaN(value) || value === 0 ? null : value);
+
         const contours = generateContours(values, width, height);
         setContours(contours);
         renderContours(contours, width, height);
@@ -46,14 +43,6 @@ const GeoTIFFViewer = () => {
   }, []);
 
   const generateContours = (data, width, height) => {
-    const values = new Array(height);
-    for (let y = 0; y < height; y++) {
-      values[y] = new Array(width);
-      for (let x = 0; x < width; x++) {
-        values[y][x] = data[y * width + x];
-      }
-    }
-
     const validValues = data.filter(d => d !== null);
     const contours = d3.contours()
       .size([width, height])
@@ -62,39 +51,105 @@ const GeoTIFFViewer = () => {
 
     return contours;
   };
-
   const renderContours = (contours, width, height) => {
     // Clear existing content
     d3.select(svgRef.current).selectAll("*").remove();
 
     // Create color scale
-    const color = d3.scaleSequential()
-      .domain(d3.extent(contours.map(c => c.value)))
-      .interpolator(d3.interpolateMagma)
-      .unknown("#fff"); // Set unknown values (NaN or null) to white
+    const colorScale = d3.scaleSequential()
+        .domain(d3.extent(contours.map(c => c.value)))
+        .interpolator(d3.interpolateMagma)
+        .unknown("#fff"); // Set unknown values (NaN or null) to white
     
     // Add contours
     d3.select(svgRef.current)
-      .selectAll("path")
-      .data(contours)
-      .enter().append("path")
-      .attr("d", d3.geoPath())
-      .attr("fill", d => color(d.value))
-      .attr("stroke", "#000")
-      .attr("stroke-width", 0.25);
+        .selectAll("path")
+        .data(contours)
+        .enter().append("path")
+        .attr("d", d3.geoPath())
+        .attr("fill", d => colorScale(d.value))
+        .attr("stroke", "#000")
+        .attr("stroke-width", 0.5); // Adjust stroke width as needed
 
-    // Add scale
-    const scale = d3.scaleLinear()
-      .domain(d3.extent(contours.map(c => c.value)))
-      .range([20, 300]); // Scale range from 20 to 300 pixels
+    // Extract colors used in the contours
+    const usedColors = contours.map(c => colorScale(c.value));
 
-    const xAxis = d3.axisBottom(scale)
-      .ticks(5); // Adjust number of ticks as needed
+    // Determine unique colors and create a scale for legend
+    const uniqueColors = [...new Set(usedColors)];
+    const legendWidth = 300;
+    const legendHeight = 20;
 
-    d3.select(scaleRef.current)
-      .attr("transform", `translate(50, 10)`) // Adjust position as needed
-      .call(xAxis);
-  };
+    // Add color scale bar
+    const defs = d3.select(svgRef.current).append("defs");
+    const linearGradient = defs.append("linearGradient")
+        .attr("id", "legend-gradient")
+        .attr("x1", "0%").attr("y1", "0%")
+        .attr("x2", "100%").attr("y2", "0%");
+
+    // Add gradient stops based on colors used in the contours
+    linearGradient.selectAll("stop")
+        .data(uniqueColors)
+        .enter().append("stop")
+        .attr("offset", (d, i) => i / (uniqueColors.length - 1))
+        .attr("stop-color", d => d);
+
+    // Add legend rectangle
+    const legend = d3.select(svgRef.current).append("g")
+        .attr("class", "legend")
+        .attr("transform", `translate(50, ${height + 100})`);
+
+    legend.append("rect")
+        .attr("width", legendWidth)
+        .attr("height", legendHeight)
+        .style("fill", "url(#legend-gradient)");
+
+    // Create scale for legend
+    const legendScale = d3.scaleLinear()
+        .domain(d3.extent(contours.map(c => c.value)))
+        .range([0, legendWidth]);
+
+    // Add axis for legend
+    const legendAxis = d3.axisBottom(legendScale)
+        .ticks(5);
+
+    legend.append("g")
+        .attr("transform", `translate(0, ${legendHeight})`)
+        .call(legendAxis);
+
+    // Add legend label
+    legend.append("text")
+        .attr("x", legendWidth / 2)
+        .attr("y", -6)
+        .attr("fill", "#000")
+        .attr("text-anchor", "middle")
+        .text("Color Legend");
+
+    // Add contours with updated styling
+    const contoursGroup = d3.select(svgRef.current).append("g");
+
+    contoursGroup.selectAll("path")
+        .data(contours)
+        .enter().append("path")
+        .attr("d", d3.geoPath())
+        .attr("fill", "none")
+        .attr("stroke", "#000")
+        .attr("stroke-width", 0.5)
+        .attr("stroke-dasharray", "3,3") // Add dashed line style for contours
+        .attr("stroke-opacity", 0.7); // Adjust opacity as needed
+
+    // Optionally add labels to contours if applicable
+    // contoursGroup.selectAll("text")
+    //     .data(contours)
+    //     .enter().append("text")
+    //     .attr("transform", d => `translate(${d3.geoPath().centroid(d)})`)
+    //     .attr("dy", "0.35em")
+    //     .attr("text-anchor", "middle")
+    //     .attr("font-size", 10)
+    //     .text(d => d.value);
+
+};
+
+
 
   return (
     <div>
