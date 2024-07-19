@@ -26,10 +26,7 @@ const GeoTIFFViewer = () => {
         const height = image.getHeight();
 
         const rasters = await image.readRasters();
-        let values = rasters[0]; // Assuming the first raster band contains the data
-
-        // Filter out NaN or null values
-        // values = values.map(value => isNaN(value) || value === 0 ? null : value);
+        let values = rasters[0]; 
 
         const contours = generateContours(values, width, height);
         setContours(contours);
