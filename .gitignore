@@ -3,3 +3,5 @@ tiff-viewer/node_modules
 /tiff_folder
 /cliped_folder
 /geojson
+/models
+/rf_result

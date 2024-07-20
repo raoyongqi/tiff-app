@@ -2,6 +2,6 @@ fastapi
 uvicorn
 rasterio
 matplotlib
-gdal
-osgeo
 geopandas
+joblib
+scikit-learn
