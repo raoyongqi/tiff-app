@@ -7,7 +7,7 @@ import numpy as np
 
 # 输入文件夹路径和 GeoJSON 文件路径
 tiff_folder = 'tiff_folder/'
-geojson_path = 'geojson/Pan-Tibetan Highlands (Liu et al._2022).geojson'
+geojson_path = 'geojson/filtered_data.geojson'
 output_folder = 'cliped_folder/'
 
 # 创建输出文件夹（如果不存在）

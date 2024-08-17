@@ -46,7 +46,7 @@ def load_feature_names(file_path):
 tif_folder = 'cliped_folder'  # 替换为实际tif文件夹路径
 model_folder = 'models'  # 替换为实际模型文件夹路径
 output_folder = 'rf_result'  # 替换为实际输出文件夹路径
-feature_names_file = 'models/feature_names_PL_direct.txt'  # 特征名称文件路径
+feature_names_file = 'models/feature_names_PL.txt'  # 特征名称文件路径
 
 tif_files = [os.path.join(tif_folder, f) for f in os.listdir(tif_folder) if f.endswith('.tif')]
 model_files = [os.path.join(model_folder, f) for f in os.listdir(model_folder) if f.endswith('.joblib')]
@@ -75,7 +75,7 @@ data_2d = data_stack.reshape((rows * cols, bands))
 coords_2d = np.stack((lons.flatten(), lats.flatten()), axis=1)
 data_with_coords = np.hstack((coords_2d,data_2d))
 
-feature_names = ['lon', 'lat'] + feature_names 
+feature_names = ['LON', 'LAT'] + feature_names 
 
 # 将数据转换为DataFrame
 df = pd.DataFrame(data_with_coords, columns=feature_names)
@@ -96,6 +96,7 @@ for model_file in model_files:
     #     model_feature_names = feature_names
 
     # # 调整数据框的列顺序以匹配模型的特征顺序
+    print((df)[:1])
     df = df[model_feature_names]
 
     # 进行预测
